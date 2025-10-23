@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Player Panel</title>
+    <meta name="description" content="Sistema para upload e armazenamento de arquivos M3U com player de TV">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2563eb",
+                        secondary: "#1e40af",
+                        accent: "#3b82f6"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-tv text-white text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">IPTV Player Panel</h1>
+                <p class="text-gray-600 mt-2">Faça login para acessar o sistema</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        placeholder="Digite seu usuário"
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        placeholder="Digite sua senha"
+                    >
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full bg-primary hover:bg-secondary text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                    Entrar
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>Use: admin / 123456 para teste</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden by default) -->
+    <div id="dashboard" class="hidden min-h-screen bg-gray-50">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tv text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-semibold text-gray-900">IPTV Player Panel</h1>
+                            <p class="text-sm text-gray-500">Gerenciamento de arquivos M3U</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <nav class="flex space-x-1">
+                            <button 
+                                id="filesTab"
+                                class="px-4 py-2 rounded-lg font-medium transition-colors bg-primary text-white"
+                            >
+                                <i class="fas fa-folder mr-2"></i>Arquivos
+                            </button>
+                            <button 
+                                id="playerTab"
+                                class="px-4 py-2 rounded-lg font-medium transition-colors text-gray-600 hover:bg-gray-100"
+                            >
+                                <i class="fas fa-play mr-2"></i>Player TV
+                            </button>
+                        </nav>
+                        <span class="text-sm text-gray-600" id="welcomeUser">Bem-vindo, Admin</span>
+                        <button 
+                            id="logoutBtn"
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            <i class="fas fa-sign-out-alt mr-2"></i>Sair
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Files Section -->
+        <div id="filesSection" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Upload Section -->
+            <div class="bg-white rounded-xl shadow-sm border p-6 mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Upload de Arquivo M3U</h2>
+                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Formatos suportados: .m3u, .m3u8</span>
+                    </div>
+                </div>
+                
+                <div 
+                    id="dropZone" 
+                    class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary transition-colors cursor-pointer"
+                >
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-lg font-medium text-gray-700 mb-2">Arraste e solte seu arquivo M3U aqui</p>
+                    <p class="text-gray-500 mb-4">ou</p>
+                    <input 
+                        type="file" 
+                        id="fileInput" 
+                        accept=".m3u,.m3u8" 
+                        class="hidden"
+                    >
+                    <button 
+                        id="browseBtn"
+                        class="bg-primary hover:bg-secondary text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                    >
+                        <i class="fas fa-folder-open mr-2"></i>Procurar Arquivo
+                    </button>
+                    <p class="text-sm text-gray-500 mt-4">Tamanho máximo: 10MB</p>
+                </div>
+                
+                <div id="uploadProgress" class="hidden mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Enviando arquivo...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="progressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files List -->
+            <div class="bg-white rounded-xl shadow-sm border p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">Arquivos M3U Armazenados</h2>
+                
+                <div id="filesList" class="space-y-4">
+                    <!-- Files will be dynamically added here -->
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-folder-open text-4xl mb-4"></i>
+                        <p>Nenhum arquivo M3U encontrado</p>
+                        <p class="text-sm">Faça upload do seu primeiro arquivo M3U</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TV Player Section -->
+        <div id="playerSection" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Channel List -->
+                <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Canais</h2>
+                        <div class="flex space-x-2">
+                            <button 
+                                id="prevChannel"
+                                class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                title="Canal Anterior"
+                            >
+                                <i class="fas fa-chevron-up"></i>
+                            </button>
+                            <button 
+                                id="nextChannel"
+                                class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                title="Próximo Canal"
+                            >
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 max-h-96 overflow-y-auto" id="channelsList">
+                        <!-- Channels will be dynamically added here -->
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-tv text-2xl mb-2"></i>
+                            <p class="text-sm">Nenhum canal carregado</p>
+                            <p class="text-xs">Faça upload de um arquivo M3U primeiro</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Player -->
+                <div class="lg:col-span-3">
+                    <div class="bg-black rounded-xl shadow-lg overflow-hidden">
+                        <!-- Video Container -->
+                        <div class="aspect-video bg-gray-900 flex items-center justify-center relative">
+                            <video 
+                                id="videoPlayer"
+                                class="w-full h-full"
+                                controls
+                                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='450' viewBox='0 0 800 450'%3E%3Crect width='800' height='450' fill='%231f2937'/%3E%3Cpath d='M320,180 L480,225 L320,270 Z' fill='%236b7280'/%3E%3C/svg%3E"
+                            >
+                                Seu navegador não suporta o elemento de vídeo.
+                            </video>
+                            
+                            <!-- Loading Overlay -->
+                            <div id="loadingOverlay" class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
+                                <div class="text-center text-white">
+                                    <div class="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                    <p>Carregando canal...</p>
+                                </div>
+                            </div>
+
+                            <!-- No Channel Selected -->
+                            <div id="noChannelOverlay" class="absolute inset-0 bg-gray-900 flex items-center justify-center">
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-tv text-6xl mb-4"></i>
+                                    <h3 class="text-xl font-semibold mb-2">Nenhum canal selecionado</h3>
+                                    <p>Selecione um canal da lista para começar a assistir</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Player Controls -->
+                        <div class="bg-gray-800 p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <button 
+                                        id="playPauseBtn"
+                                        class="w-12 h-12 bg-primary hover:bg-secondary rounded-full flex items-center justify-center text-white transition-colors"
+                                    >
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <div class="text-white">
+                                        <div id="currentChannelName" class="font-semibold">-</div>
+                                        <div id="currentChannelInfo" class="text-sm text-gray-300">Selecione um canal</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-2 text-white">
+                                    <button 
+                                        id="volumeBtn"
+                                        class="w-10 h-10 hover:bg-gray-700 rounded-full flex items-center justify-center transition-colors"
+                                    >
+                                        <i class="fas fa-volume-up"></i>
+                                    </button>
+                                    <input 
+                                        type="range" 
+                                        id="volumeSlider"
+                                        min="0" 
+                                        max="1" 
+                                        step="0.1" 
+                                        value="1"
+                                        class="w-20 accent-white"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Channel Info -->
+                    <div class="mt-4 bg-white rounded-xl shadow-sm border p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Informações do Canal</h3>
+                        <div id="channelInfo" class="text-gray-600">
+                            <p>Nenhum canal selecionado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t mt-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="text-center text-gray-500 text-sm">
+                    <p>IPTV Player Panel &copy; 2024 - Sistema de gerenciamento de arquivos M3U</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Sample user data (in a real application, this would be handled by a backend)
+        const users = [
+            { "username": "admin", "password": "123456" }
+        ];
+
+        // Sample files data
+        let files = [];
+        
+        // Channels data
+        let channels = [];
+        let currentChannelIndex = -1;
+
+        // DOM Elements
+        const loginScreen = document.getElementById("loginScreen");
+        const dashboard = document.getElementById("dashboard");
+        const loginForm = document.getElementById("loginForm");
+        const logoutBtn = document.getElementById("logoutBtn");
+        const welcomeUser = document.getElementById("welcomeUser");
+        const filesTab = document.getElementById("filesTab");
+        const playerTab = document.getElementById("playerTab");
+        const filesSection = document.getElementById("filesSection");
+        const playerSection = document.getElementById("playerSection");
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
+        const browseBtn = document.getElementById("browseBtn");
+        const uploadProgress = document.getElementById("uploadProgress");
+        const progressBar = document.getElementById("progressBar");
+        const progressPercent = document.getElementById("progressPercent");
+        const filesList = document.getElementById("filesList");
+        const channelsList = document.getElementById("channelsList");
+        const videoPlayer = document.getElementById("videoPlayer");
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        const noChannelOverlay = document.getElementById("noChannelOverlay");
+        const playPauseBtn = document.getElementById("playPauseBtn");
+        const volumeBtn = document.getElementById("volumeBtn");
+        const volumeSlider = document.getElementById("volumeSlider");
+        const currentChannelName = document.getElementById("currentChannelName");
+        const currentChannelInfo = document.getElementById("currentChannelInfo");
+        const channelInfo = document.getElementById("channelInfo");
+        const prevChannel = document.getElementById("prevChannel");
+        const nextChannel = document.getElementById("nextChannel");
+
+        // Login functionality
+        loginForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                // Successful login
+                welcomeUser.textContent = "Bem-vindo, " + username;
+                loginScreen.classList.add("hidden");
+                dashboard.classList.remove("hidden");
+                
+                // Load existing files
+                renderFilesList();
+            } else {
+                alert("Usuário ou senha incorretos!");
+            }
+        });
+
+        // Logout functionality
+        logoutBtn.addEventListener("click", function() {
+            dashboard.classList.add("hidden");
+            loginScreen.classList.remove("hidden");
+            loginForm.reset();
+        });
+
+        // Tab navigation
+        filesTab.addEventListener("click", function() {
+            filesSection.classList.remove("hidden");
+            playerSection.classList.add("hidden");
+            filesTab.classList.add("bg-primary", "text-white");
+            filesTab.classList.remove("text-gray-600", "hover:bg-gray-100");
+            playerTab.classList.remove("bg-primary", "text-white");
+            playerTab.classList.add("text-gray-600", "hover:bg-gray-100");
+        });
+
+        playerTab.addEventListener("click", function() {
+            filesSection.classList.add("hidden");
+            playerSection.classList.remove("hidden");
+            playerTab.classList.add("bg-primary", "text-white");
+            playerTab.classList.remove("text-gray-600", "hover:bg-gray-100");
+            filesTab.classList.remove("bg-primary", "text-white");
+            filesTab.classList.add("text-gray-600", "hover:bg-gray-100");
+            
+            // Load channels if available
+            if (channels.length === 0 && files.length > 0) {
+                // Simulate loading channels from first M3U file
+                loadSampleChannels();
+            }
+        });
+
+        // File upload functionality
+        browseBtn.addEventListener("click", function() {
+            fileInput.click();
+        });
+
+        dropZone.addEventListener("click", function() {
+            fileInput.click();
+        });
+
+        dropZone.addEventListener("dragover", function(e) {
+            e.preventDefault();
+            dropZone.classList.add("border-primary", "bg-blue-50");
+        });
+
+        dropZone.addEventListener("dragleave", function() {
+            dropZone.classList.remove("border-primary", "bg-blue-50");
+        });
+
+        dropZone.addEventListener("drop", function(e) {
+            e.preventDefault();
+            dropZone.classList.remove("border-primary", "bg-blue-50");
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener("change", function(e) {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        function handleFileUpload(file) {
+            // Check file type
+            if (!file.name.toLowerCase().endsWith(".m3u") && !file.name.toLowerCase().endsWith(".m3u8")) {
+                alert("Por favor, selecione apenas arquivos M3U ou M3U8");
+                return;
+            }
+
+            // Check file size (100MB max)
+            if (file.size > 100 * 1024 * 1024) {
+                alert("O arquivo é muito grande. Tamanho máximo: 100MB");
+                return;
+            }
+
+            // Show upload progress
+            uploadProgress.classList.remove("hidden");
+            
+            // Simulate upload progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    
+                    // Add file to list after upload completes
+                    setTimeout(() => {
+                        const newFile = {
+                            "id": Date.now(),
+                            "name": file.name,
+                            "size": formatFileSize(file.size),
+                            "uploadDate": new Date().toLocaleDateString("pt-BR"),
+                            "url": "#"
+                        };
+                        
+                        files.unshift(newFile);
+                        renderFilesList();
+                        
+                        // Load sample channels when first file is uploaded
+                        if (files.length === 1) {
+                            loadSampleChannels();
+                        }
+                        
+                        // Hide progress and reset
+                        uploadProgress.classList.add("hidden");
+                        progressBar.style.width = "0%";
+                        progressPercent.textContent = "0%";
+                        fileInput.value = "";
+                        
+                        alert("Arquivo " + file.name + " enviado com sucesso!");
+                    }, 500);
+                }
+                
+                progressBar.style.width = progress + "%";
+                progressPercent.textContent = Math.round(progress) + "%";
+            }, 100);
+        }
+
+        function renderFilesList() {
+            if (files.length === 0) {
+                filesList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-folder-open text-4xl mb-4"></i>
+                        <p>Nenhum arquivo M3U encontrado</p>
+                        <p class="text-sm">Faça upload do seu primeiro arquivo M3U</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filesList.innerHTML = files.map(file => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-file-alt text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">${file.name}</h3>
+                            <p class="text-sm text-gray-500">${file.size} • Enviado em ${file.uploadDate}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button 
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors load-channels-btn"
+                            data-id="${file.id}"
+                        >
+                            <i class="fas fa-tv mr-2"></i>Carregar Canais
+                        </button>
+                        <button 
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors delete-btn"
+                            data-id="${file.id}"
+                        >
+                            <i class="fas fa-trash mr-2"></i>Excluir
+                        </button>
+                    </div>
+                </div>
+            `).join("");
+
+            // Add event listeners to buttons
+            document.querySelectorAll(".load-channels-btn").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    const fileId = this.getAttribute("data-id");
+                    const file = files.find(f => f.id == fileId);
+                    loadSampleChannels();
+                    alert("Canais carregados do arquivo: " + file.name);
+                    
+                    // Switch to player tab
+                    playerTab.click();
+                });
+            });
+
+            document.querySelectorAll(".delete-btn").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    const fileId = this.getAttribute("data-id");
+                    if (confirm("Tem certeza que deseja excluir este arquivo?")) {
+                        files = files.filter(f => f.id != fileId);
+                        renderFilesList();
+                        
+                        // Clear channels if no files left
+                        if (files.length === 0) {
+                            channels = [];
+                            renderChannelsList();
+                            resetPlayer();
+                        }
+                    }
+                });
+            });
+        }
+
+        // TV Player functionality
+        function loadSampleChannels() {
+            // Sample channels data (in a real app, this would be parsed from M3U file)
+            channels = [
+                {
+                    "id": 1,
+                    "name": "Globo HD",
+                    "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+                    "category": "Entretenimento",
+                    "language": "Português",
+                    "description": "Canal de entretenimento e notícias"
+                },
+                {
+                    "id": 2,
+                    "name": "SporTV",
+                    "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+                    "category": "Esportes",
+                    "language": "Português",
+                    "description": "Canal esportivo com transmissões ao vivo"
+                },
+                {
+                    "id": 3,
+                    "name": "Discovery",
+                    "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+                    "category": "Documentários",
+                    "language": "Português",
+                    "description": "Documentários e programas educativos"
+                },
+                {
+                    "id": 4,
+                    "name": "HBO",
+                    "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+                    "category": "Filmes",
+                    "language": "Inglês/Português",
+                    "description": "Filmes e séries exclusivas"
+                },
+                {
+                    "id": 5,
+                    "name": "Cartoon Network",
+                    "url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+                    "category": "Infantil",
+                    "language": "Português",
+                    "description": "Desenhos animados e programas infantis"
+                }
+            ];
+            
+            renderChannelsList();
+        }
+
+        function renderChannelsList() {
+            if (channels.length === 0) {
+                channelsList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-tv text-2xl mb-2"></i>
+                        <p class="text-sm">Nenhum canal carregado</p>
+                        <p class="text-xs">Faça upload de um arquivo M3U primeiro</p>
+                    </div>
+                `;
+                return;
+            }
+
+            channelsList.innerHTML = channels.map((channel, index) => `
+                <div 
+                    class="p-3 rounded-lg cursor-pointer transition-colors ${index === currentChannelIndex ? 'bg-primary text-white' : 'bg-gray-50 hover:bg-gray-100'}"
+                    onclick="selectChannel(${index})"
+                >
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded flex items-center justify-center">
+                            <i class="fas fa-tv ${index === currentChannelIndex ? 'text-white' : 'text-gray-500'}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium truncate">${channel.name}</div>
+                            <div class="text-xs ${index === currentChannelIndex ? 'text-blue-100' : 'text-gray-500'} truncate">${channel.category}</div>
+                        </div>
+                        <div class="text-xs ${index === currentChannelIndex ? 'text-blue-100' : 'text-gray-400'}">
+                            ${String(index + 1).padStart(2, '0')}
+                        </div>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function selectChannel(index) {
+            if (index < 0 || index >= channels.length) return;
+            
+            currentChannelIndex = index;
+            const channel = channels[index];
+            
+            // Update UI
+            renderChannelsList();
+            
+            // Show loading
+            loadingOverlay.classList.remove("hidden");
+            noChannelOverlay.classList.add("hidden");
+            
+            // Set video source
+            videoPlayer.src = channel.url;
+            videoPlayer.load();
+            
+            // Update player info
+            currentChannelName.textContent = channel.name;
+            currentChannelInfo.textContent = `Canal ${String(index + 1).padStart(2, '0')} • ${channel.category}`;
+            
+            // Update channel info
+            channelInfo.innerHTML = `
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong>Categoria:</strong> ${channel.category}
+                    </div>
+                    <div>
+                        <strong>Idioma:</strong> ${channel.language}
+                    </div>
+                    <div class="col-span-2">
+                        <strong>Descrição:</strong> ${channel.description}
+                    </div>
+                </div>
+            `;
+            
+            // Auto-play when ready
+            videoPlayer.addEventListener("loadeddata", function onLoad() {
+                loadingOverlay.classList.add("hidden");
+                videoPlayer.play().catch(e => {
+                    console.log("Autoplay prevented:", e);
+                });
+                videoPlayer.removeEventListener("loadeddata", onLoad);
+            }, { once: true });
+            
+            // Handle errors
+            videoPlayer.addEventListener("error", function onError() {
+                loadingOverlay.classList.add("hidden");
+                alert("Erro ao carregar o canal. Verifique a URL do stream.");
+                videoPlayer.removeEventListener("error", onError);
+            }, { once: true });
+        }
+
+        function resetPlayer() {
+            currentChannelIndex = -1;
+            videoPlayer.src = "";
+            videoPlayer.load();
+            currentChannelName.textContent = "-";
+            currentChannelInfo.textContent = "Selecione um canal";
+            channelInfo.innerHTML = "<p>Nenhum canal selecionado</p>";
+            noChannelOverlay.classList.remove("hidden");
+            loadingOverlay.classList.add("hidden");
+            renderChannelsList();
+        }
+
+        // Player controls
+        playPauseBtn.addEventListener("click", function() {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                videoPlayer.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        videoPlayer.addEventListener("play", function() {
+            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        });
+
+        videoPlayer.addEventListener("pause", function() {
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        });
+
+        // Volume controls
+        volumeSlider.addEventListener("input", function() {
+            videoPlayer.volume = this.value;
+            updateVolumeIcon();
+        });
+
+        volumeBtn.addEventListener("click", function() {
+            if (videoPlayer.volume > 0) {
+                videoPlayer.volume = 0;
+                volumeSlider.value = 0;
+            } else {
+                videoPlayer.volume = 1;
+                volumeSlider.value = 1;
+            }
+            updateVolumeIcon();
+        });
+
+        function updateVolumeIcon() {
+            const volume = videoPlayer.volume;
+            if (volume === 0) {
+                volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            } else if (volume < 0.5) {
+                volumeBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
+            } else {
+                volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            }
+        }
+
+        // Channel navigation
+        prevChannel.addEventListener("click", function() {
+            if (channels.length === 0) return;
+            let newIndex = currentChannelIndex - 1;
+            if (newIndex < 0) newIndex = channels.length - 1;
+            selectChannel(newIndex);
+        });
+
+        nextChannel.addEventListener("click", function() {
+            if (channels.length === 0) return;
+            let newIndex = currentChannelIndex + 1;
+            if (newIndex >= channels.length) newIndex = 0;
+            selectChannel(newIndex);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener("keydown", function(e) {
+            if (playerSection.classList.contains("hidden")) return;
+            
+            switch(e.key) {
+                case "ArrowUp":
+                    e.preventDefault();
+                    prevChannel.click();
+                    break;
+                case "ArrowDown":
+                    e.preventDefault();
+                    nextChannel.click();
+                    break;
+                case " ":
+                    e.preventDefault();
+                    playPauseBtn.click();
+                    break;
+            }
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return "0 Bytes";
+            const k = 1024;
+            const sizes = ["Bytes", "KB", "MB", "GB"];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+        }
+
+        // Make selectChannel available globally for onclick events
+        window.selectChannel = selectChannel;
+
+        // Initialize
+        document.addEventListener("DOMContentLoaded", function() {
+            // Any initialization code if needed
+        });
+    </script>
+</body>
+</html>
